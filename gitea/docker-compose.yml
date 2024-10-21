@@ -1,0 +1,67 @@
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__server__DOMAIN=git.paulelser.com
+      - GITEA__server__PROTOCOL=http
+      - GITEA__server__ROOT_URL=https://git.paulelser.com/
+      - GITEA__server__HTTP_PORT=3000
+    volumes:
+      - ./gitea:/data
+    networks:
+      - gitea_network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gitea.rule=Host(`git.paulelser.com`)
+      - traefik.http.routers.gitea.entrypoints=websecure
+      - traefik.http.routers.gitea.tls=true
+      - traefik.http.services.gitea.loadbalancer.server.port=3000
+    restart: always
+
+  traefik:
+    image: traefik:v2.9
+    container_name: traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      - --providers.file.directory=/etc/traefik/
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certificates.toml:/etc/traefik/certificates.toml:ro
+      - /etc/traefik/certs:/certs:ro
+    networks:
+      - gitea_network
+    restart: always
+
+  gitea_runner:
+    image: gitea/act_runner:latest
+    container_name: gitea_runner
+    networks:
+      - gitea_network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GITEA_INSTANCE_URL=http://gitea:3000
+      - GITEA_RUNNER_REGISTRATION_TOKEN=FhHeclbXhHe9oU1M9QZFhMLFIAXPr1LmNux15Gmu
+      - GITEA_RUNNER_NAME=gitea-runner-free-tier-instance
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 300M
+    restart: always
+
+networks:
+  gitea_network:
+    name: gitea_network

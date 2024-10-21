@@ -1,0 +1,52 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.8 Chrome/128.0.6613.36 Electron/32.0.1 Safari/537.36" version="24.7.8">
+  <diagram name="Page-1" id="3W8gMR16Kp8VWYMhW6Sa">
+    <mxGraphModel dx="5114" dy="277" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4681" pageHeight="3300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-35" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="272.39000000000004" y="126.75" width="364.5" height="364.5" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-1" value="Client" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.devices.laptop;" vertex="1" parent="1">
+          <mxGeometry x="-40" y="270" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-6" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="364.47" y="219" width="172" height="172" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-5" value="OCI VM" style="sketch=0;aspect=fixed;pointerEvents=1;shadow=0;dashed=0;html=1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;shape=mxgraph.azure.virtual_machine_feature;fillColor=#000000;strokeColor=#36393d;" vertex="1" parent="1">
+          <mxGeometry x="404.64" y="267.75" width="91.66" height="82.5" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-10" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://scalefactory.com/blog/2020/12/16/wireguard-vpn-for-remote-working/img/wireguard.png;" vertex="1" parent="1">
+          <mxGeometry x="377.97" y="231.26000000000002" width="72.97" height="36.49" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-11" value="iptables Firewall" style="image;html=1;image=img/lib/clip_art/networking/Firewall_02_128x128.png" vertex="1" parent="1">
+          <mxGeometry x="428.53" y="130" width="43.89" height="51.75" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-16" value="SSH" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.servers.tunnel_straight;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="271.5" y="299.07" width="69.97" height="11.86" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-17" value="" style="endArrow=none;html=1;rounded=0;strokeWidth=5;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="LkQGYyZ6PpGqlHIE-yoE-1" target="LkQGYyZ6PpGqlHIE-yoE-22">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="110" y="330" as="sourcePoint" />
+            <mxPoint x="230" y="305" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-22" value="" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="249.5" y="293.5" width="23" height="23" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-24" value="Port&lt;div&gt;51820&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="224" y="253.5" width="60" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-25" value="WireGuard&lt;div&gt;VPN Network&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="420.00000000000006" y="229.5" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-29" value="" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="341.47" y="293.5" width="23" height="23" as="geometry" />
+        </mxCell>
+        <mxCell id="LkQGYyZ6PpGqlHIE-yoE-30" value="Port&lt;div&gt;22&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="327.97" y="253.5" width="50" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

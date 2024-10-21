@@ -1,0 +1,22 @@
+services:
+  gitea_runner:
+    image: gitea/act_runner:latest
+    container_name: gitea_runner
+    restart: always
+    networks:
+      - gitea_runner_network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GITEA_INSTANCE_URL=https://git.paulelser.com
+      - GITEA_RUNNER_REGISTRATION_TOKEN=FhHeclbXhHe9oU1M9QZFhMLFIAXPr1LmNux15Gmu
+      - GITEA_RUNNER_NAME=gitea-runner-free-tier-instance
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 300M
+
+networks:
+  gitea_runner_network:
+    name: gitea_runner_network

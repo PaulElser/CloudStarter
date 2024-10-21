@@ -1,0 +1,88 @@
+name: Deploy Server
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: long-classifier-435414-r1
+  VM_NAME: gcp-free
+  ZONE: us-central1-f
+  GITEA_URL: https://git.paulelser.com
+
+jobs:
+  deploy-services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if should run
+        if: ${{ !contains(github.event.head_commit.message, 'server_deploy') && !contains(github.event.head_commit.message, 'all_deploy') }}
+        run: exit 78
+
+      - name: Manually clone DevOps repository
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB }}
+        run: |
+          git config --global url."https://api:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
+          git clone --depth 1 https://github.com/PaulElser/DevOps.git devops
+
+      # Setup for deploying to GCP VM
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get VM IP
+        id: vm_ip
+        run: |
+          VM_IP=$(gcloud compute instances describe ${{ env.VM_NAME }} \
+            --zone ${{ env.ZONE }} \
+            --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+          echo "ip=$VM_IP" >> $GITHUB_OUTPUT
+          echo "VM IP: $VM_IP"
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/gcp_vm_key
+          chmod 600 ~/.ssh/gcp_vm_key
+          ssh-keyscan -H ${{ steps.vm_ip.outputs.ip }} >> ~/.ssh/known_hosts
+
+      - name: Deploy server services
+        env:
+          VM_IP: ${{ steps.vm_ip.outputs.ip }}
+          VM_USER: paul
+          SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/vm_ssh_key
+          chmod 600 ~/.ssh/vm_ssh_key
+
+          ssh-keyscan -H $VM_IP >> ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/vm_ssh_key -r devops/server ${VM_USER}@${VM_IP}:~/server
+
+          ssh -i ~/.ssh/vm_ssh_key ${VM_USER}@${VM_IP} '
+            cd ~/server
+            echo "before down"
+            docker compose down --volumes
+            echo "before build"
+            docker compose build
+            echo "before up"
+            docker compose up -d
+          '
+      # Open necessary ports on GCP firewall
+      - name: Open firewall ports
+        run: |
+          gcloud compute firewall-rules create allow-monitoring-ports \
+            --direction=INGRESS \
+            --priority=1000 \
+            --network=default \
+            --action=ALLOW \
+            --rules=tcp:9100,tcp:9113,tcp:9114 \
+            --target-tags=monitoring
+          gcloud compute instances add-tags ${{ env.VM_NAME }} --tags=monitoring --zone=${{ env.ZONE }}

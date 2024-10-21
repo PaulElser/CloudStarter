@@ -1,0 +1,33 @@
+FROM nginx:latest
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libmaxminddb0 \
+    libmaxminddb-dev \
+    wget \
+    build-essential \
+    libpcre3 \
+    libpcre3-dev \
+    zlib1g \
+    zlib1g-dev \
+    libssl-dev \
+    git && \
+    wget http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz && \
+    tar zxvf nginx-$NGINX_VERSION.tar.gz && \
+    git clone https://github.com/leev/ngx_http_geoip2_module.git && \
+    cd nginx-$NGINX_VERSION && \
+    ./configure --with-compat --add-dynamic-module=../ngx_http_geoip2_module && \
+    make modules && \
+    cp objs/ngx_http_geoip2_module.so /etc/nginx/modules/ && \
+    cd .. && \
+    rm -rf nginx-$NGINX_VERSION nginx-$NGINX_VERSION.tar.gz ngx_http_geoip2_module && \
+    apt-get remove -y wget build-essential git && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
+
+RUN nginx -V && ls -l /etc/nginx/modules/
+
+CMD ["nginx", "-g", "daemon off;"]

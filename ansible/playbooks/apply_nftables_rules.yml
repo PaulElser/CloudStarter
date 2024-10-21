@@ -1,0 +1,52 @@
+---
+- name: Deploy and apply nftables rules on Oracle OCI VM
+  hosts: wg_server
+  become: yes
+  tasks:
+    - name: Install nftables
+      apt:
+        name: nftables
+        state: present
+        update_cache: yes
+
+    - name: Start and enable nftables service
+      systemd:
+        name: nftables
+        state: started
+        enabled: yes
+
+    - name: Copy nftables rules file to VM
+      copy:
+        src: rules.nft
+        dest: /etc/nftables.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Apply nftables rules from file
+      ansible.builtin.shell: "nft -f /etc/nftables.conf"
+
+    - name: Stop and disable iptables if installed
+      systemd:
+        name: iptables
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+      when: ansible_facts.packages['iptables'] is defined
+
+    - name: Ensure nftables is enabled and running
+      systemd:
+        name: nftables
+        state: started
+        enabled: yes
+
+    - name: Enable nftables rules to apply on reboot
+      copy:
+        src: /etc/nftables.conf
+        dest: /etc/nftables.rules
+        remote_src: yes
+
+    - name: Ensure nftables is persistent across reboots
+      systemd:
+        name: nftables
+        state: reloaded

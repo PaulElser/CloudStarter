@@ -1,0 +1,52 @@
+#!/usr/sbin/nft -f
+
+# Flush the existing ruleset
+flush ruleset
+
+table ip filter {
+    chain INPUT {
+        type filter hook input priority 0;
+        policy accept;
+        udp dport 51820 counter accept
+        tcp dport 22 counter accept
+        iifname "wg0" counter accept
+        ct state related,established counter accept
+        counter reject
+    }
+
+    chain FORWARD {
+        type filter hook forward priority 0;
+        policy accept;
+        iifname "wg0" counter accept
+        ct state related,established counter accept
+    }
+
+    chain OUTPUT {
+        type filter hook output priority 0;
+        policy accept;
+        udp dport 53 counter accept
+    }
+}
+
+table ip nat {
+    chain PREROUTING {
+        type nat hook prerouting priority -100;
+        policy accept;
+    }
+
+    chain INPUT {
+        type nat hook input priority 100;
+        policy accept;
+    }
+
+    chain OUTPUT {
+        type nat hook output priority -100;
+        policy accept;
+    }
+
+    chain POSTROUTING {
+        type nat hook postrouting priority 100;
+        policy accept;
+        oifname "ens3" ip saddr 10.10.0.0/24 counter masquerade
+    }
+}

@@ -1,0 +1,32 @@
+---
+- name: Uninstall Docker
+  hosts: docker_group
+  become: yes
+
+  tasks:
+    - name: Stop Docker service
+      service:
+        name: docker
+        state: stopped
+      ignore_errors: yes
+
+    - name: Uninstall Docker packages
+      package:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: absent
+
+    - name: Remove Docker repository (Debian/Ubuntu)
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
+        state: absent
+      when: ansible_os_family == "Debian"
+
+    - name: Remove Docker data directory
+      file:
+        path: /var/lib/docker
+        state: absent

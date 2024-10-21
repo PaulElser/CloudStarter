@@ -1,0 +1,183 @@
+---
+- name: Setup WireGuard Server
+  hosts: wg_server
+  become: yes
+  tasks:
+    - name: Install WireGuard on Ubuntu server
+      apt:
+        name:
+          - wireguard
+          - wireguard-tools
+          - resolvconf
+        state: present
+        update_cache: yes
+
+    - name: Enable IP forwarding on the server
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        sysctl_set: yes
+        state: present
+        reload: yes
+
+    - name: Generate private key for WireGuard server
+      command: wg genkey
+      register: server_private_key
+
+    - name: Save the private key to a file
+      copy:
+        content: "{{ server_private_key.stdout }}"
+        dest: /etc/wireguard/server_private_key
+        mode: 0600
+
+    - name: Generate public key for WireGuard server
+      ansible.builtin.shell: "cat /etc/wireguard/server_private_key | wg pubkey"
+      register: server_public_key
+
+    - name: Save the public key to a file
+      copy:
+        content: "{{ server_public_key.stdout }}"
+        dest: /etc/wireguard/server_public_key
+        mode: 0600
+
+    - name: Create WireGuard configuration file on the server
+      copy:
+        content: |
+          [Interface]
+          PrivateKey = {{ server_private_key.stdout }}
+          Address = 10.10.0.1/24
+          ListenPort = 51820
+        dest: /etc/wireguard/wg0.conf
+        mode: 0600
+
+    - name: Install nftables
+      apt:
+        name: nftables
+        state: present
+
+    - name: Create nftables rules file
+      copy:
+        content: |
+          #!/usr/sbin/nft -f
+          table ip filter {
+              chain INPUT {
+                  type filter hook input priority 0; policy accept;
+                  udp dport 51820 accept # Allow UDP traffic on port 51820 for WireGuard
+              }
+          }
+        dest: /etc/nftables.rules
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Apply nftables rules
+      command: nft -f /etc/nftables.rules
+
+    - name: Ensure nftables rules are applied on reboot
+      lineinfile:
+        path: /etc/rc.local
+        state: present
+        create: yes
+        line: 'nft -f /etc/nftables.rules'
+
+    - name: Ensure rc.local is executable (for Debian/Ubuntu)
+      file:
+        path: /etc/rc.local
+        mode: '0755'
+        state: file
+      when: ansible_distribution in ['Debian', 'Ubuntu']
+
+    - name: Set server information as facts
+      set_fact:
+        wg_server_public_key: "{{ server_public_key.stdout }}"
+        wg_server_ip: "{{ ansible_host }}"
+
+- name: Setup WireGuard Client
+  hosts: wg_client
+  connection: local
+  become: yes
+  vars:
+    server_public_key: "{{ hostvars[groups['wg_server'][0]]['wg_server_public_key'] }}"
+    server_ip: "{{ hostvars[groups['wg_server'][0]]['wg_server_ip'] }}"
+  tasks:
+    - name: Check if WireGuard is installed on macOS
+      shell: wireguard-go --version
+      ignore_errors: yes
+      register: wg_installed
+
+    - name: Install WireGuard on macOS via Homebrew (if not installed)
+      shell: brew install wireguard-tools
+      when: wg_installed.rc != 0 and ansible_facts['os_family'] == 'Darwin'
+
+    - name: Generate private key for WireGuard client
+      command: wg genkey
+      register: client_private_key
+
+    - name: Save the private key to a file
+      copy:
+        content: "{{ client_private_key.stdout }}"
+        dest: /etc/wireguard/client_private_key
+        mode: 0600
+
+    - name: Generate public key for WireGuard client
+      ansible.builtin.shell: "cat /etc/wireguard/client_private_key | wg pubkey"
+      register: client_public_key
+
+    - name: Save the public key to a file
+      copy:
+        content: "{{ client_public_key.stdout }}"
+        dest: /etc/wireguard/client_public_key
+        mode: 0600
+
+    - name: Create WireGuard configuration file on the client
+      copy:
+        content: |
+          [Interface]
+          PrivateKey = {{ client_private_key.stdout }}
+          Address = 10.10.0.4/32
+
+          [Peer]
+          PublicKey = {{ server_public_key }}
+          Endpoint = {{ server_ip }}:51820
+          AllowedIPs = 10.10.0.0/24
+        dest: /etc/wireguard/wg0.conf
+        mode: 0600
+
+    - name: Check if WireGuard is running
+      command: wg show
+      register: wg_running
+      failed_when: false
+      changed_when: false
+
+    - name: Bring up WireGuard interface if not running
+      command: wg-quick up /etc/wireguard/wg0.conf
+      when: wg_running.stdout == ""
+
+    - name: Restart WireGuard to apply latest configuration if running
+      shell: wg-quick down /etc/wireguard/wg0.conf && wg-quick up /etc/wireguard/wg0.conf
+      when: wg_running.stdout != ""
+
+    - name: Set client's public key as a fact
+      set_fact:
+        wg_client_public_key: "{{ client_public_key.stdout }}"
+
+- name: Adapt WireGuard server config file
+  hosts: wg_server
+  become: yes
+  vars:
+    client_public_key: "{{ hostvars[groups['wg_client'][0]]['wg_client_public_key'] }}"
+  tasks:
+    - name: Add client's public key to server configuration
+      lineinfile:
+        path: /etc/wireguard/wg0.conf
+        insertafter: EOF
+        line: |
+          [Peer]
+          PublicKey = {{ client_public_key }}
+          AllowedIPs = 10.10.0.4/32
+
+    - name: Start and enable WireGuard on the server
+      systemd:
+        name: wg-quick@wg0
+        enabled: yes
+        state: restarted  # ensure that the service is restarted

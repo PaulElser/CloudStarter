@@ -1,0 +1,87 @@
+name: GCP VM Management
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: long-classifier-435414-r1
+  VM_NAME: gcp-free
+  ZONE: us-central1-f
+  GITEA_URL: https://git.paulelser.com
+
+jobs:
+  manage-vm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if should run
+        if: ${{ !contains(github.event.head_commit.message, 'gcp_deploy') && !contains(github.event.head_commit.message, 'all_deploy') }}
+        run: exit 78
+
+      - name: Manually clone repository
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB }}
+        run: |
+          git config --global url."https://api:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
+          git clone --depth 1 https://github.com/PaulElser/DevOps.git devops
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Check VM status
+        id: vm_status
+        run: |
+          VM_STATUS=$(gcloud compute instances describe ${{ env.VM_NAME }} \
+            --zone ${{ env.ZONE }} \
+            --format="value(status)" 2>/dev/null || echo "NOT_FOUND")
+          echo "status=$VM_STATUS" >> $GITHUB_OUTPUT
+          echo "VM Status: $VM_STATUS"
+
+      - name: Create VM if not exists
+        if: steps.vm_status.outputs.status == 'NOT_FOUND'
+        run: |
+          cd devops/terraform/gcp
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Get VM IP
+        id: vm_ip
+        run: |
+          VM_IP=$(gcloud compute instances describe ${{ env.VM_NAME }} \
+            --zone ${{ env.ZONE }} \
+            --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+          echo "ip=$VM_IP" >> $GITHUB_OUTPUT
+          echo "VM IP: $VM_IP"
+
+      - name: Setup SSH key and get host key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/ssh-key-oraclevm.key
+          echo < ~/.ssh/ssh-key-oraclevm.key
+          chmod 600 ~/.ssh/ssh-key-oraclevm.key
+          ssh-keyscan -H ${{ steps.vm_ip.outputs.ip }} >> ~/.ssh/known_hosts
+
+      - name: Install Ansible
+        run: |
+          sudo apt install -y python3-pip
+          pip3 install ansible
+
+      - name: Configure VM
+        env:
+          VM_IP: ${{ steps.vm_ip.outputs.ip }}
+        run: |
+          sed -i "s/{{ gcp_vm_ip }}/${{ steps.vm_ip.outputs.ip }}/" devops/ansible/inventory.yml
+
+          ansible-playbook -i devops/ansible/inventory.yml \
+            --limit gcp_vm \
+            devops/ansible/playbooks/install_docker.yml

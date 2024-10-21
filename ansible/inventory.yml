@@ -1,0 +1,25 @@
+---
+all:
+  children:
+    docker_group:
+      hosts:
+        oci_vm:
+          ansible_host: jump.paulelser.com
+          ansible_user: ubuntu
+          ansible_ssh_private_key_file: ~/.ssh/ssh-key-oraclevm.key
+        gcp_vm:
+          ansible_host: {{ gcp_vm_ip }}
+          ansible_user: paul
+          ansible_ssh_private_key_file: ~/.ssh/ssh-key-oraclevm.key
+    wg_server:
+      hosts:
+        vm:
+          ansible_host: jump.paulelser.com
+          ansible_user: ubuntu
+          ansible_ssh_private_key_file: ~/.ssh/ssh-key-oraclevm.key
+    wg_client:
+      hosts:
+        client:
+          ansible_host: localhost
+          ansible_user: paul
+          ansible_connection: local
