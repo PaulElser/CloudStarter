@@ -1,6 +1,6 @@
-## You always wanted to start with the "CLOUD" but never knew how?
+## You are looking for a free project learning path to teach you some of the most relevant technologies for cloud or on-prem?
 
-Luckily, I got you covered: You will learn how to use *always free* cloud ressources by Google's GCP and Oracle's OCI:
+You found it! You will learn how to use *always free* cloud ressources by Google's GCP and Oracle's OCI:
 - use Terraform to spin up VMs for both GCP and OCI automatically with one click
 - use Ansible to configure the VMs with just one command
 - set up your own Wireguard VPN server and learn about nft firewalling and using jumphosts for security
