@@ -53,7 +53,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - GITEA_INSTANCE_URL=http://gitea:3000
-      - GITEA_RUNNER_REGISTRATION_TOKEN=FhHeclbXhHe9oU1M9QZFhMLFIAXPr1LmNux15Gmu
+      - GITEA_RUNNER_REGISTRATION_TOKEN=YOUR_TOKEN_HERE
       - GITEA_RUNNER_NAME=gitea-runner-free-tier-instance
     deploy:
       resources:

@@ -6,7 +6,7 @@ set -e
 GITEA_URL="https://git.paulelser.com"
 REPO_OWNER="pelser"
 REPO_NAME="OneRing"
-ACCESS_TOKEN="FhHeclbXhHe9oU1M9QZFhMLFIAXPr1LmNux15Gmu"
+ACCESS_TOKEN="YOUR_TOKEN_HERE"
 RUNNER_NAME="gitea-runner-$(hostname)"
 INSTALL_DIR="/home/ubuntu/gitea_act_runner"
 
